@@ -1,5 +1,6 @@
 import { Box, Play, CheckCircle2, Settings, Puzzle } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
+import logo from '../assets/logo.png'
 
 interface SidebarProps {
   activeView: string
@@ -37,7 +38,7 @@ export default function Sidebar({
       {/* Header */}
       <div className="h-14 flex items-center gap-3 px-6 border-b border-border/50 titlebar-drag-region">
         <div className="w-9 h-9 flex items-center justify-center titlebar-nodrag-region">
-          <img src="/assets/logo.png" alt="Dozy Logo" className="w-full h-full object-contain drop-shadow-md" />
+          <img src={logo} alt="Dozy Logo" className="w-full h-full object-contain drop-shadow-md" />
         </div>
         <div>
           <h1 className="font-bold text-xl tracking-tight text-foreground" style={{ fontFamily: "'Quicksand', sans-serif" }}>Dozy</h1>

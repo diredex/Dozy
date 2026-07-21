@@ -2,12 +2,14 @@
   "name": "dozy",
   "version": "1.0.0",
   "description": "Dozy — build, validate and package Unreal Engine plugins for Fab/Marketplace submission",
+  "author": "diredex",
   "main": "./out/main/index.js",
   "scripts": {
     "predev": "node scripts/ensure-electron.js",
     "dev": "electron-vite dev",
     "prebuild": "node scripts/ensure-electron.js",
     "build": "electron-vite build",
+    "build:win": "npm run build && electron-builder --win",
     "preview": "electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
@@ -27,11 +29,34 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",
     "electron": "^35.7.5",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^3.1.0",
     "postcss": "^8.5.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwindcss": "^4.1.0",
     "typescript": "^5.7.0"
+  },
+  "build": {
+    "appId": "com.dozy.app",
+    "productName": "Dozy",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "Dozy"
+    },
+    "files": [
+      "out/**/*",
+      "package.json"
+    ]
   }
 }
