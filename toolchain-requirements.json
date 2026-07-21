@@ -1,0 +1,37 @@
+{
+  "$comment": "Toolchain requirements per UE version. Edit this file when Epic ships new engine versions — one-line change, not buried in code.",
+  "requirements": [
+    {
+      "ueVersionPattern": "5.1.*",
+      "msvcComponentId": "Microsoft.VisualStudio.Component.VC.14.32.17.2.x86.x64",
+      "msvcDisplayName": "MSVC v143 — 14.32 (VS 17.2)",
+      "windowsSdkComponentPattern": "Microsoft.VisualStudio.Component.Windows1"
+    },
+    {
+      "ueVersionPattern": "5.2.*",
+      "msvcComponentId": "Microsoft.VisualStudio.Component.VC.14.34.17.4.x86.x64",
+      "msvcDisplayName": "MSVC v143 — 14.34 (VS 17.4)",
+      "windowsSdkComponentPattern": "Microsoft.VisualStudio.Component.Windows1"
+    },
+    {
+      "ueVersionPattern": "5.3.*",
+      "msvcComponentId": "Microsoft.VisualStudio.Component.VC.14.36.17.6.x86.x64",
+      "msvcDisplayName": "MSVC v143 — 14.36 (VS 17.6)",
+      "windowsSdkComponentPattern": "Microsoft.VisualStudio.Component.Windows1"
+    },
+    {
+      "ueVersionPattern": "5.4.*",
+      "msvcComponentId": "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
+      "msvcDisplayName": "MSVC v143 — 14.38 (VS 17.8)",
+      "windowsSdkComponentPattern": "Microsoft.VisualStudio.Component.Windows1"
+    },
+    {
+      "ueVersionPattern": "5.5.*",
+      "msvcComponentId": "Microsoft.VisualStudio.Component.VC.14.38.17.8.x86.x64",
+      "msvcDisplayName": "MSVC v143 — 14.38 (VS 17.8)",
+      "windowsSdkComponentPattern": "Microsoft.VisualStudio.Component.Windows1"
+    }
+  ],
+  "dotnetRequired": true,
+  "dotnetMinVersion": "6.0.0"
+}
