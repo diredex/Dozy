@@ -36,7 +36,7 @@ export default function Sidebar({
     <aside className="w-[var(--sidebar-width)] flex-shrink-0 bg-background border-r border-border flex flex-col h-full transition-colors duration-300">
       {/* Header */}
       <div className="h-14 flex items-center gap-3 px-6 border-b border-border/50 titlebar-drag-region">
-        <div className="w-9 h-9 flex items-center justify-center titlebar-nodrag-region shadow-sm">
+        <div className="w-9 h-9 flex items-center justify-center titlebar-nodrag-region">
           <img src="/assets/logo.png" alt="Dozy Logo" className="w-full h-full object-contain drop-shadow-md" />
         </div>
         <div>

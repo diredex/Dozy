@@ -316,21 +316,21 @@ export default function App() {
       <div className="absolute top-0 right-0 h-9 flex items-center z-50 pointer-events-auto titlebar-nodrag-region">
         <button
           onClick={() => window.api?.minimize()}
-          className="h-full px-4 inline-flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+          className="h-full px-4 inline-flex items-center justify-center text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
           tabIndex={-1}
         >
           <Minus size={14} />
         </button>
         <button
           onClick={() => window.api?.maximize()}
-          className="h-full px-4 inline-flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors"
+          className="h-full px-4 inline-flex items-center justify-center text-muted-foreground hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
           tabIndex={-1}
         >
           <Square size={12} />
         </button>
         <button
           onClick={() => window.api?.close()}
-          className="h-full px-4 inline-flex items-center justify-center text-muted-foreground hover:bg-[hsl(var(--status-error))] hover:text-white transition-colors"
+          className="h-full px-4 inline-flex items-center justify-center text-muted-foreground hover:bg-red-500 hover:text-white transition-colors"
           tabIndex={-1}
         >
           <X size={14} />
@@ -346,7 +346,7 @@ export default function App() {
         isBuilding={state.isBuilding}
       />
 
-      <main className="main-content">
+      <main className="flex-1 h-full overflow-y-auto p-8 pt-12 relative bg-background/30">
         {state.view === 'engines' && (
           <div className="animate-in fade-in duration-300 flex flex-col gap-6">
             {/* Security Banner */}

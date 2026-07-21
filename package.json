@@ -4,7 +4,9 @@
   "description": "Dozy — build, validate and package Unreal Engine plugins for Fab/Marketplace submission",
   "main": "./out/main/index.js",
   "scripts": {
+    "predev": "node scripts/ensure-electron.js",
     "dev": "electron-vite dev",
+    "prebuild": "node scripts/ensure-electron.js",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
