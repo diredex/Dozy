@@ -2,7 +2,7 @@
   "name": "dozy",
   "version": "1.0.0",
   "description": "Dozy — build, validate and package Unreal Engine plugins for Fab/Marketplace submission",
-  "author": "diredex",
+  "author": "Dire Dex",
   "main": "./out/main/index.js",
   "scripts": {
     "predev": "node scripts/ensure-electron.js",
