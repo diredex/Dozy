@@ -346,7 +346,7 @@ export default function App() {
         isBuilding={state.isBuilding}
       />
 
-      <main className="main-content pt-3">
+      <main className="main-content pt-16">
         {state.view === 'engines' && (
           <div className="animate-in fade-in duration-300 flex flex-col gap-6">
             {/* Security Banner */}
