@@ -157,7 +157,7 @@ const initialState: AppState = {
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState)
-  
+
   // Local cache for defender whitelisted paths to hide the banner
   const [whitelistedPaths, setWhitelistedPaths] = useState<string[]>(() => {
     try {
@@ -311,7 +311,7 @@ export default function App() {
     <div className="app-layout">
       {/* Draggable Titlebar Area */}
       <div className="absolute top-0 left-0 right-32 h-9 titlebar-drag-region z-40 pointer-events-auto" />
-      
+
       {/* Custom Titlebar Controls */}
       <div className="absolute top-0 right-0 h-9 flex items-center z-50 pointer-events-auto titlebar-nodrag-region">
         <button
@@ -336,7 +336,7 @@ export default function App() {
           <X size={14} />
         </button>
       </div>
-      
+
       <Sidebar
         activeView={state.view}
         onViewChange={(v) => dispatch({ type: 'SET_VIEW', view: v })}
@@ -346,7 +346,7 @@ export default function App() {
         isBuilding={state.isBuilding}
       />
 
-      <main className="main-content pt-16">
+      <main className="main-content pt-24">
         {state.view === 'engines' && (
           <div className="animate-in fade-in duration-300 flex flex-col gap-6">
             {/* Security Banner */}
@@ -360,21 +360,21 @@ export default function App() {
                   <div className="flex-1 pt-0.5">
                     <h3 className="text-sm font-semibold text-blue-500 mb-1">Windows Defender Exclusion Recommended</h3>
                     <p className="text-xs text-muted-foreground leading-relaxed max-w-3xl">
-                      UnrealBuildTool dynamically generates code during the build process. Windows Defender (Smart App Control) often flags these unsigned temporary files and kills the build process. 
+                      UnrealBuildTool dynamically generates code during the build process. Windows Defender (Smart App Control) often flags these unsigned temporary files and kills the build process.
                     </p>
                     <div className="mt-3 flex items-center gap-3">
-                      <button 
+                      <button
                         className="btn btn-sm bg-blue-600 hover:bg-blue-700 text-white px-4 h-8 flex items-center gap-2 border-none shadow-sm shadow-blue-500/20"
                         disabled={isWhitelistingBanner}
                         onClick={async () => {
                           try {
                             setIsWhitelistingBanner(true)
                             await window.api.whitelistDefender(state.outputDir)
-                            
+
                             const newPaths = [...whitelistedPaths, state.outputDir]
                             setWhitelistedPaths(newPaths)
                             localStorage.setItem('whitelistedPaths', JSON.stringify(newPaths))
-                            
+
                             alert('Successfully added the output folder to Windows Defender exclusions!')
                           } catch (err) {
                             alert(err instanceof Error ? err.message : 'Unknown error')
@@ -387,7 +387,7 @@ export default function App() {
                           <><Loader2 size={14} className="animate-spin" /> Whitelisting...</>
                         ) : 'Whitelist Output Folder'}
                       </button>
-                      <button 
+                      <button
                         className="text-xs font-medium text-muted-foreground hover:text-foreground transition-colors px-2 py-1"
                         onClick={() => {
                           const newPaths = [...whitelistedPaths, state.outputDir]
@@ -427,7 +427,7 @@ export default function App() {
                   + Add Engine
                 </button>
                 <button className="btn btn-ghost btn-sm gap-2" onClick={runScan} disabled={state.isScanning}>
-                  {state.isScanning ? <span className="spinner spinner-sm" /> : <RefreshCw size={14} />} 
+                  {state.isScanning ? <span className="spinner spinner-sm" /> : <RefreshCw size={14} />}
                   <span>Rescan</span>
                 </button>
               </div>
