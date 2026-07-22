@@ -1,7 +1,7 @@
 // main/index.ts — Electron main process entry point
 // Creates the BrowserWindow, registers IPC handlers, manages lifecycle
 
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { registerIpcHandlers } from './ipc'
@@ -26,6 +26,12 @@ function createWindow(): void {
   // Log renderer console to main process
   mainWindow.webContents.on('console-message', (_event, _level, message, line, sourceId) => {
     console.log(`[Renderer] ${message} (${sourceId}:${line})`)
+  })
+
+  // Open external links in default browser
+  mainWindow.webContents.setWindowOpenHandler((details) => {
+    shell.openExternal(details.url)
+    return { action: 'deny' }
   })
 
   // Load renderer
