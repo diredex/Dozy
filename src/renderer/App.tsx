@@ -499,7 +499,7 @@ export default function App() {
 
         {state.view === 'results' && (
           <div className="animate-fade-in">
-            <ResultsPanel results={state.buildResults} onRetry={handleRetryBuild} />
+            <ResultsPanel results={state.buildResults} buildJobs={state.buildJobs} onRetry={handleRetryBuild} />
           </div>
         )}
 
