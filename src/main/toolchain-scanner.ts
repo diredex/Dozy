@@ -1,4 +1,4 @@
-// toolchain-scanner.ts — Detect Visual Studio installations + MSVC toolsets + .NET SDK
+// toolchain-scanner.ts — Detect Visual Studio installations + MSVC toolsets + .NET SDK/Runtime
 // Cross-references against the externalized toolchain-requirements.json
 
 import { execSync } from 'child_process'
@@ -105,6 +105,48 @@ function isVersionGte(actual: string, minimum: string): boolean {
   return true // equal
 }
 
+// ── .NET Runtime check (not just SDK) ────────────────────────
+// UE 5.0–5.3 build tools use BinaryFormatter which was removed in .NET 9.
+// We need to verify that a compatible runtime (≤8.x) is installed.
+
+interface DotnetRuntime {
+  name: string
+  version: string
+  majorVersion: number
+}
+
+function getDotnetRuntimes(): DotnetRuntime[] {
+  try {
+    const output = execSync('dotnet --list-runtimes', {
+      encoding: 'utf-8',
+      timeout: 10_000
+    })
+    const runtimes: DotnetRuntime[] = []
+    // Each line is like: Microsoft.NETCore.App 8.0.29 [C:\Program Files\dotnet\shared\Microsoft.NETCore.App]
+    for (const line of output.split('\n')) {
+      const match = line.match(/^(\S+)\s+(\d+\.\d+\.\d+)/)
+      if (match) {
+        const version = match[2]
+        const major = parseInt(version.split('.')[0], 10)
+        runtimes.push({ name: match[1], version, majorVersion: major })
+      }
+    }
+    return runtimes
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Check if a .NET runtime compatible with BinaryFormatter is installed.
+ * .NET 6.x and 8.x support BinaryFormatter (8.x with an opt-in flag).
+ * .NET 9+ completely removed it.
+ */
+function hasCompatibleDotnetRuntime(runtimes: DotnetRuntime[]): boolean {
+  // We need at least one runtime with major version ≤ 8
+  return runtimes.some(r => r.majorVersion <= 8 && r.majorVersion >= 3)
+}
+
 // ── Version pattern matching ─────────────────────────────────
 
 function matchesVersionPattern(version: string, pattern: string): boolean {
@@ -202,6 +244,24 @@ export async function scanToolchains(engines: EngineInstall[]): Promise<Toolchai
         displayName: `.NET SDK ${config.dotnetMinVersion}+ (${dotnetVersion ? `found ${dotnetVersion}` : 'not found'})`,
         kind: 'dotnet-sdk'
       })
+    }
+
+    // Check .NET Runtime compatibility for older UE versions.
+    // UE 5.0–5.3 build tools use BinaryFormatter which requires .NET ≤8.x.
+    const engineMajor = parseInt(engine.version.split('.')[0], 10)
+    const engineMinor = parseInt(engine.version.split('.')[1], 10)
+    const needsOlderDotnet = (engineMajor === 4) || (engineMajor === 5 && engineMinor <= 3)
+
+    if (needsOlderDotnet) {
+      const runtimes = getDotnetRuntimes()
+      if (runtimes.length > 0 && !hasCompatibleDotnetRuntime(runtimes)) {
+        const highestMajor = Math.max(...runtimes.map(r => r.majorVersion))
+        missing.push({
+          id: 'dotnet-runtime-compat',
+          displayName: `.NET 8 Runtime required (only .NET ${highestMajor}+ found — BinaryFormatter removed)`,
+          kind: 'dotnet-runtime'
+        })
+      }
     }
 
     reports.push({

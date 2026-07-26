@@ -34,7 +34,11 @@ export default function DependencyList({ components, vsInstallPath, onInstall }:
             className="flex items-center gap-3 p-3 rounded-lg bg-background border border-border/50 transition-colors hover:border-border"
           >
             {/* Icon */}
-            <div className={`p-2 rounded-md ${comp.kind === 'vs-component' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'}`}>
+            <div className={`p-2 rounded-md ${
+              comp.kind === 'vs-component' ? 'bg-blue-500/10 text-blue-500' : 
+              comp.kind === 'dotnet-runtime' ? 'bg-orange-500/10 text-orange-500' :
+              'bg-purple-500/10 text-purple-500'
+            }`}>
               {comp.kind === 'vs-component' ? <Wrench size={16} /> : <Box size={16} />}
             </div>
 
@@ -53,10 +57,12 @@ export default function DependencyList({ components, vsInstallPath, onInstall }:
               className={`hidden sm:inline-flex px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
                 comp.kind === 'vs-component'
                   ? 'bg-blue-500/10 text-blue-500'
+                  : comp.kind === 'dotnet-runtime'
+                  ? 'bg-orange-500/10 text-orange-500'
                   : 'bg-purple-500/10 text-purple-500'
               }`}
             >
-              {comp.kind === 'vs-component' ? 'VS Component' : '.NET SDK'}
+              {comp.kind === 'vs-component' ? 'VS Component' : comp.kind === 'dotnet-runtime' ? '.NET Runtime' : '.NET SDK'}
             </span>
 
             {/* Install button */}

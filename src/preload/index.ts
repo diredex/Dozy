@@ -110,7 +110,8 @@ const api = {
   whitelistDefender: (dir: string): Promise<void> => ipcRenderer.invoke('settings:whitelistDefender', dir),
 
   // ── Toolchain ──────────────────────────────────────────
-  patchUE51EngineBug: (enginePath: string): Promise<void> => ipcRenderer.invoke('toolchain:patchUE51', enginePath)
+  patchUE51EngineBug: (enginePath: string): Promise<void> => ipcRenderer.invoke('toolchain:patchUE51', enginePath),
+  installDotnetRuntime: (): Promise<boolean> => ipcRenderer.invoke('toolchain:installDotnetRuntime')
 }
 
 // Expose to renderer as window.api

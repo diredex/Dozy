@@ -6,7 +6,7 @@ import { readFileSync } from 'fs'
 import path from 'path'
 import { scanEngines, addManualEngine, removeEngine } from './engine-scanner'
 import { scanToolchains } from './toolchain-scanner'
-import { installVsComponent, installDotnetSdk, patchUE51EngineBug } from './installer'
+import { installVsComponent, installDotnetSdk, patchUE51EngineBug, installDotnetRuntime } from './installer'
 import { startBuildQueue, cancelBuild } from './builder'
 import type { PluginInfo, EngineInstall } from '../shared/types'
 
@@ -24,7 +24,6 @@ function parseUplugin(filePath: string): PluginInfo {
   }
 }
 
-import { installUE51Toolchain } from './installer'
 
 // ── Output directory state ───────────────────────────────────
 
@@ -167,7 +166,7 @@ export function registerIpcHandlers(): void {
 
   // ── Defender ─────────────────────────────────────────────
 
-  ipcMain.handle('settings:whitelistDefender', async (event, dir: string) => {
+  ipcMain.handle('settings:whitelistDefender', async (_event, dir: string) => {
     return new Promise<void>((resolve, reject) => {
       // Use Base64 encoding to avoid any quote escaping issues in PowerShell
       const script = `Add-MpPreference -ExclusionPath '${dir}'`
@@ -188,8 +187,12 @@ export function registerIpcHandlers(): void {
 
   // ── Toolchain ────────────────────────────────────────────
 
-  ipcMain.handle('toolchain:patchUE51', async (event, enginePath: string) => {
+  ipcMain.handle('toolchain:patchUE51', async (_event, enginePath: string) => {
     await patchUE51EngineBug(enginePath)
+  })
+
+  ipcMain.handle('toolchain:installDotnetRuntime', async () => {
+    return installDotnetRuntime()
   })
 
   // ── Theme ──────────────────────────────────────────────

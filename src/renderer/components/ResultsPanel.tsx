@@ -15,6 +15,8 @@ function formatBytes(bytes: number): string {
 
 export default function ResultsPanel({ results, onRetry }: ResultsPanelProps) {
   const [isFixing, setIsFixing] = useState<string | null>(null)
+  const [patchedEngines, setPatchedEngines] = useState<Set<string>>(new Set())
+  const [dotnetOpened, setDotnetOpened] = useState<Set<string>>(new Set())
 
   const successCount = results.filter((r) => r.success).length
   const failCount = results.length - successCount
@@ -160,36 +162,116 @@ export default function ResultsPanel({ results, onRetry }: ResultsPanelProps) {
 
                 {result.actionableError === 'missing_ue51_toolchain' && (
                   <div className="mt-3 pt-3 border-t border-red-500/10">
-                    <button
-                      className="btn btn-secondary gap-2 h-8 text-xs font-medium w-full sm:w-auto"
-                      disabled={isFixing === result.engineVersion}
-                      onClick={async () => {
-                        try {
-                          setIsFixing(result.engineVersion)
-                          await window.api.patchUE51EngineBug(result.enginePath)
-                          onRetry(result.engineVersion)
-                        } catch (err) {
-                          alert(err instanceof Error ? err.message : 'Unknown error')
-                        } finally {
-                          setIsFixing(null)
-                        }
-                      }}
-                    >
-                      {isFixing === result.engineVersion ? (
-                        <>
-                          <Loader2 size={14} className="animate-spin text-muted-foreground" />
-                          Patching Source Code...
-                        </>
-                      ) : (
-                        <>
-                          <Wrench size={14} className="text-muted-foreground" />
-                          One-Click Fix: Patch UE 5.1 Engine Bug
-                        </>
-                      )}
-                    </button>
-                    <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed max-w-[500px]">
-                      This will safely inject a tiny 3-line macro polyfill into the Unreal Engine 5.1 source code (<code className="bg-secondary px-1 py-0.5 rounded opacity-80">ConcurrentLinearAllocator.h</code>) to permanently fix this bug on your machine.
-                    </p>
+                    {patchedEngines.has(result.engineVersion) ? (
+                      <div className="p-3 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-2.5 text-emerald-500 text-xs font-medium">
+                          <CheckCircle2 size={16} className="shrink-0" />
+                          <div>
+                            <div className="font-semibold text-sm">✅ Engine source successfully patched!</div>
+                            <div className="text-[11px] text-emerald-500/90 mt-0.5">Macro polyfill injected into ConcurrentLinearAllocator.h. Starting build retry in 2s...</div>
+                          </div>
+                        </div>
+                        <button 
+                          className="btn bg-emerald-500 hover:bg-emerald-600 text-white h-8 px-3 text-xs font-medium shrink-0 shadow-sm"
+                          onClick={() => onRetry(result.engineVersion)}
+                        >
+                          <RotateCcw size={14} className="mr-1 inline" />
+                          Retry Now
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          className="btn btn-secondary gap-2 h-8 text-xs font-medium w-full sm:w-auto hover:bg-primary hover:text-primary-foreground transition-colors"
+                          disabled={isFixing === result.engineVersion}
+                          onClick={async () => {
+                            try {
+                              setIsFixing(result.engineVersion)
+                              await window.api.patchUE51EngineBug(result.enginePath)
+                              setPatchedEngines(prev => new Set(prev).add(result.engineVersion))
+                              setTimeout(() => {
+                                onRetry(result.engineVersion)
+                              }, 2200)
+                            } catch (err) {
+                              alert(err instanceof Error ? err.message : 'Unknown error')
+                            } finally {
+                              setIsFixing(null)
+                            }
+                          }}
+                        >
+                          {isFixing === result.engineVersion ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin text-primary" />
+                              Patching Engine Source...
+                            </>
+                          ) : (
+                            <>
+                              <Wrench size={14} className="text-primary" />
+                              One-Click Fix: Patch Engine Source
+                            </>
+                          )}
+                        </button>
+                        <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed max-w-[500px]">
+                          This will safely inject a tiny 3-line macro polyfill into UE {result.engineVersion}'s source code (<code className="bg-secondary px-1 py-0.5 rounded opacity-80">ConcurrentLinearAllocator.h</code>) to permanently fix the <code className="bg-secondary px-1 py-0.5 rounded opacity-80">__has_feature</code> bug on your machine. The build will auto-retry after patching.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {result.actionableError === 'dotnet_binaryformatter' && (
+                  <div className="mt-3 pt-3 border-t border-red-500/10">
+                    {dotnetOpened.has(result.engineVersion) ? (
+                      <div className="p-3 rounded-lg bg-orange-500/10 border border-orange-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-in fade-in zoom-in-95 duration-200">
+                        <div className="flex items-center gap-2.5 text-orange-500 text-xs font-medium">
+                          <CheckCircle2 size={16} className="shrink-0" />
+                          <div>
+                            <div className="font-semibold text-sm">🌐 Download page opened in browser!</div>
+                            <div className="text-[11px] text-orange-500/90 mt-0.5">Please complete the .NET 8 Desktop Runtime setup, then click Retry below.</div>
+                          </div>
+                        </div>
+                        <button 
+                          className="btn bg-orange-500 hover:bg-orange-600 text-white h-8 px-3 text-xs font-medium shrink-0 shadow-sm"
+                          onClick={() => onRetry(result.engineVersion)}
+                        >
+                          <RotateCcw size={14} className="mr-1 inline" />
+                          Retry Build
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <button
+                          className="btn btn-secondary gap-2 h-8 text-xs font-medium w-full sm:w-auto hover:bg-primary hover:text-primary-foreground transition-colors"
+                          disabled={isFixing === result.engineVersion}
+                          onClick={async () => {
+                            try {
+                              setIsFixing(result.engineVersion)
+                              await window.api.installDotnetRuntime()
+                              setDotnetOpened(prev => new Set(prev).add(result.engineVersion))
+                            } catch (err) {
+                              alert(err instanceof Error ? err.message : 'Unknown error')
+                            } finally {
+                              setIsFixing(null)
+                            }
+                          }}
+                        >
+                          {isFixing === result.engineVersion ? (
+                            <>
+                              <Loader2 size={14} className="animate-spin text-primary" />
+                              Opening Download Page...
+                            </>
+                          ) : (
+                            <>
+                              <Wrench size={14} className="text-primary" />
+                              One-Click Fix: Install .NET 8 Runtime
+                            </>
+                          )}
+                        </button>
+                        <p className="text-[10px] text-muted-foreground mt-2 leading-relaxed max-w-[500px]">
+                          UE {result.engineVersion}'s build tools use <code className="bg-secondary px-1 py-0.5 rounded opacity-80">BinaryFormatter</code> which was removed in .NET 9+. Install the <strong>.NET 8 Desktop Runtime</strong> from the download page, then retry the build.
+                        </p>
+                      </>
+                    )}
                   </div>
                 )}
               </div>

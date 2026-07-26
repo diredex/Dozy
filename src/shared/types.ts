@@ -17,7 +17,7 @@ export interface EngineInstall {
 
 // -- Toolchain Detection --
 
-export type ComponentKind = 'vs-component' | 'dotnet-sdk'
+export type ComponentKind = 'vs-component' | 'dotnet-sdk' | 'dotnet-runtime'
 
 export interface ToolchainComponent {
   /** VS component ID or "dotnet-sdk" */
@@ -50,7 +50,7 @@ export interface BuildJob {
   outputPath?: string
   zipPath?: string
   errorSummary?: string
-  actionableError?: 'missing_ue51_toolchain'
+  actionableError?: 'missing_ue51_toolchain' | 'dotnet_binaryformatter'
   /** Lines of live log output */
   logLines: string[]
 }
@@ -64,7 +64,7 @@ export interface BuildResult {
   zipPath?: string
   zipSizeBytes?: number
   errorSummary?: string
-  actionableError?: 'missing_ue51_toolchain'
+  actionableError?: 'missing_ue51_toolchain' | 'dotnet_binaryformatter'
 }
 
 // -- Installer --

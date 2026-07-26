@@ -2,7 +2,7 @@
 // Sequential queue, live log streaming, error pattern extraction
 
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process'
-import { createWriteStream, existsSync, mkdirSync } from 'fs'
+import { createWriteStream, existsSync, mkdirSync, readdirSync } from 'fs'
 import path from 'path'
 import { BrowserWindow } from 'electron'
 import type { EngineInstall, BuildJob, BuildResult } from '../shared/types'
@@ -12,23 +12,51 @@ import { packagePlugin } from './packager'
 
 const ERROR_PATTERNS = [
   {
+    pattern: /BinaryFormatter serialization and deserialization have been removed/i,
+    extract: (): string => 'UE build tools use BinaryFormatter which was removed in .NET 9+. Install .NET 8 runtime to fix this.'
+  },
+  {
+    pattern: /You must install or update \.NET to run this application/i,
+    extract: (): string => 'Missing .NET runtime for AutomationTool. Install .NET 8 runtime to fix this.'
+  },
+  {
+    pattern: /The following frameworks were found:[\s\S]*?To install missing framework, download:/i,
+    extract: (): string => '.NET framework mismatch when launching AutomationTool.'
+  },
+  {
     pattern: /UnrealBuildTool has banned the MSVC.*$/m,
     extract: (match: RegExpMatchArray): string => match[0]
   },
   {
-    pattern: /ERROR: (.+)$/m,
+    pattern: /(?:ERROR|error): (.+)$/m,
     extract: (match: RegExpMatchArray): string => match[1]
   },
   {
-    pattern: /FAILED/i,
+    pattern: /(?:BUILD FAILED|Result:\s*Failed|FAILED)/i,
     extract: (): string => 'Build failed — check log for details'
   }
 ]
 
-function extractErrorSummary(logContent: string): { summary: string, actionableError?: 'missing_ue51_toolchain' } | undefined {
+function extractErrorSummary(logContent: string): { summary: string, actionableError?: BuildJob['actionableError'] } | undefined {
+  // BinaryFormatter crash — .NET 9+ removed this API that UE 5.0–5.3 UBT relies on
+  if (/BinaryFormatter serialization/i.test(logContent) || /PlatformNotSupportedException.*BinaryFormatter/i.test(logContent)) {
+    return {
+      summary: 'UE build tools crashed: BinaryFormatter was removed in .NET 9+. You need .NET 8 runtime installed for older Unreal Engine versions.',
+      actionableError: 'dotnet_binaryformatter'
+    }
+  }
+
+  // .NET runtime missing entirely
+  if (/You must install or update \.NET to run this application/i.test(logContent)) {
+    return {
+      summary: 'Missing .NET runtime for AutomationTool. Install .NET 8 runtime to fix this.',
+      actionableError: 'dotnet_binaryformatter'
+    }
+  }
+
   if (/error C4668: '__has_feature' is not defined/i.test(logContent)) {
     return { 
-      summary: 'Incompatible Visual Studio 2022 compiler detected. Unreal Engine 5.1 requires an older MSVC v14.36 toolchain.',
+      summary: 'Engine source bug: ConcurrentLinearAllocator.h uses __has_feature which is unsupported by modern MSVC. Dozy can patch this automatically.',
       actionableError: 'missing_ue51_toolchain'
     }
   }
@@ -126,7 +154,15 @@ async function buildSingle(
     const proc = spawn(`"${runUatPath}"`, args, {
       shell: true,
       cwd: path.dirname(pluginPath),
-      env: { ...process.env }
+      env: { 
+        ...process.env,
+        // Roll forward to the LOWEST available major (.NET 8), not the latest (.NET 10).
+        // .NET 9+ completely removed BinaryFormatter which UE 5.0–5.3 UBT depends on.
+        DOTNET_ROLL_FORWARD: 'Major',
+        DOTNET_ROLL_FORWARD_ON_NO_CANDIDATE_FX: '2',
+        // Re-enable BinaryFormatter on .NET 8 (disabled by default but not yet removed)
+        DOTNET_EnableUnsafeBinaryFormatterSerialization: 'true'
+      }
     })
 
     currentProcess = proc
@@ -165,9 +201,43 @@ async function buildSingle(
 
       currentProcess = null
 
-      // Success = exit code 0 AND no "Result: Failed" in log
-      const hasFailLine = /Result:\s*Failed/i.test(fullLog)
-      const success = code === 0 && !hasFailLine && !cancelled
+      // Success = exit code 0 AND no failure indicators in log
+      // IMPORTANT: UE 5.0's RunUAT.bat can swallow the exit code — Turnkey
+      // environment variable steps run after AutomationTool exits and may
+      // reset ERRORLEVEL to 0. So we MUST also scan the log for failure patterns.
+      const hasFailLine = /Result:\s*Failed/i.test(fullLog) ||
+                          /You must install or update \.NET/i.test(fullLog) ||
+                          /BUILD FAILED/i.test(fullLog) ||
+                          /UnrealBuildTool failed/i.test(fullLog) ||
+                          /ExitCode=([1-9]\d*)/i.test(fullLog) ||
+                          /BinaryFormatter serialization/i.test(fullLog) ||
+                          /\berror C\d{4}:/i.test(fullLog)
+      let success = code === 0 && !hasFailLine && !cancelled
+
+      // Verify that the build actually COMPILED something.
+      // UAT copies source files to packageDir BEFORE compiling, so the directory
+      // will have content even if the build fails. We check for Binaries/
+      // which is only created after a successful compilation.
+      if (success && !cancelled) {
+        try {
+          // Look for Binaries/ inside the HostProject plugin output
+          const hostPluginDir = path.join(packageDir, 'HostProject', 'Plugins')
+          if (existsSync(hostPluginDir)) {
+            const pluginDirs = readdirSync(hostPluginDir, { withFileTypes: true })
+              .filter(d => d.isDirectory())
+            const hasBinaries = pluginDirs.some(d => 
+              existsSync(path.join(hostPluginDir, d.name, 'Binaries'))
+            )
+            if (!hasBinaries) {
+              success = false
+            }
+          } else if (!existsSync(packageDir) || readdirSync(packageDir).length === 0) {
+            success = false
+          }
+        } catch {
+          success = false
+        }
+      }
 
       let actionableError: BuildJob['actionableError'] = undefined
       let errorSummary: string | undefined
@@ -180,6 +250,8 @@ async function buildSingle(
           if (parsedError) {
             errorSummary = parsedError.summary
             actionableError = parsedError.actionableError
+          } else if (!existsSync(packageDir) || readdirSync(packageDir).length === 0) {
+            errorSummary = 'Build failed: No output files were generated in the package directory.'
           } else {
             errorSummary = `Build exited with code ${code}`
           }
@@ -236,6 +308,7 @@ async function buildSingle(
 
       const result: BuildResult = {
         engineVersion: version,
+        enginePath: job.enginePath,
         success: false,
         logPath,
         errorSummary: `Failed to start build process: ${err.message}`
@@ -272,6 +345,7 @@ export async function startBuildQueue(
     for (const engine of engines) {
       const result: BuildResult = {
         engineVersion: engine.version,
+        enginePath: engine.path,
         success: false,
         logPath: '',
         errorSummary: validationError
@@ -288,6 +362,7 @@ export async function startBuildQueue(
     if (cancelled) {
       const result: BuildResult = {
         engineVersion: engine.version,
+        enginePath: engine.path,
         success: false,
         logPath: '',
         errorSummary: 'Build was cancelled'

@@ -9,7 +9,7 @@ const execAsync = promisify(exec)
 /**
  * Automates installing a specific Visual Studio component using the VS Installer.
  */
-export async function installVsComponent(componentId: string, vsInstallPath: string | undefined, win: BrowserWindow): Promise<boolean> {
+export async function installVsComponent(componentId: string, vsInstallPath: string | undefined, _win: BrowserWindow): Promise<boolean> {
   try {
     const setupPath = path.join(
       process.env['ProgramFiles(x86)'] || 'C:\\Program Files (x86)',
@@ -39,7 +39,7 @@ export async function installVsComponent(componentId: string, vsInstallPath: str
 /**
  * Directs the user to the .NET SDK download page.
  */
-export async function installDotnetSdk(win: BrowserWindow): Promise<boolean> {
+export async function installDotnetSdk(_win: BrowserWindow): Promise<boolean> {
   // Usually Unreal Engine requires .NET 6.0 SDK or 8.0 SDK depending on version
   await shell.openExternal('https://dotnet.microsoft.com/en-us/download/dotnet')
   return true
@@ -66,17 +66,32 @@ export async function patchUE51EngineBug(enginePath: string): Promise<void> {
     return // Already patched
   }
 
-  // Find the exact broken block start
-  const anchorLine = '#if PLATFORM_HAS_ASAN_INCLUDE'
-  if (!content.includes(anchorLine)) {
-    throw new Error('Header file does not contain the expected syntax. It may have already been modified.')
+  // Find an appropriate anchor line before the __has_feature usage
+  const possibleAnchors = [
+    '#if PLATFORM_HAS_ASAN_INCLUDE',
+    '#if __has_include(<sanitizer/asan_interface.h>)',
+    '#ifdef USE_MALLOC_BINNED3',
+    '#pragma once'
+  ]
+
+  let anchorLine: string | undefined
+  for (const anchor of possibleAnchors) {
+    if (content.includes(anchor)) {
+      anchorLine = anchor
+      break
+    }
   }
 
-  // Inject the polyfill fix directly above the anchor line
-  const fixedContent = content.replace(
-    anchorLine,
-    `#ifndef __has_feature\n\t#define __has_feature(x) 0\n#endif\n\n${anchorLine}`
-  )
+  if (!anchorLine) {
+    throw new Error('Header file does not contain recognized structure to apply patch.')
+  }
+
+  // Inject the polyfill fix directly above the anchor line (or after #pragma once if that's the anchor)
+  const replacement = anchorLine === '#pragma once' 
+    ? `#pragma once\n\n#ifndef __has_feature\n\t#define __has_feature(x) 0\n#endif`
+    : `#ifndef __has_feature\n\t#define __has_feature(x) 0\n#endif\n\n${anchorLine}`
+
+  const fixedContent = content.replace(anchorLine, replacement)
 
   // Epic Games Launcher installs files as Read-Only. We must remove the Read-Only flag before writing.
   try {
@@ -86,4 +101,13 @@ export async function patchUE51EngineBug(enginePath: string): Promise<void> {
   }
 
   await fs.promises.writeFile(headerPath, fixedContent, 'utf-8')
+}
+
+/**
+ * Opens the .NET 8 Desktop Runtime download page.
+ * UE 5.0–5.3 build tools require .NET ≤8 because BinaryFormatter was removed in .NET 9.
+ */
+export async function installDotnetRuntime(): Promise<boolean> {
+  await shell.openExternal('https://dotnet.microsoft.com/en-us/download/dotnet/8.0')
+  return true
 }
