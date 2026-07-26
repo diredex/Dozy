@@ -13,7 +13,7 @@ const AVAILABLE_PLATFORMS = [
   { id: 'Linux', label: 'Linux', description: 'Cross-compile via UBT (if engine supports it)' }
 ]
 
-const APP_VERSION = '1.0.0'
+const APP_VERSION = '1.0.1'
 
 export default function SettingsPanel({
   outputDir,

@@ -81,8 +81,10 @@ export default function Sidebar({
 
       {/* Footer Navigation */}
       <div className="mt-auto p-4 border-t border-border/50 flex items-center justify-between">
-        <div className="text-[10px] font-mono text-muted-foreground/60 uppercase tracking-wider">
-          Dozy v1.0.0
+        <div className="flex flex-col">
+          <span className="text-xs font-semibold text-foreground">
+            Dozy v1.0.1
+          </span>
         </div>
         <ThemeToggle />
       </div>
